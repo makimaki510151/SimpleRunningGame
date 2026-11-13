@@ -1,0 +1,509 @@
+:root {
+  --ink: #3a2a1e;
+  --paper: #fff6e4;
+  --coral: #ff7a5c;
+  --mustard: #ffe08a;
+  --sky: #ffd7a4;
+  color: var(--ink);
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #2a2118;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button, input { font: inherit; color: inherit; }
+
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+#grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.16;
+  mix-blend-mode: multiply;
+  background-image: radial-gradient(rgba(74, 48, 28, 0.45) 0.6px, transparent 0.7px);
+  background-size: 3px 3px;
+}
+
+#ui {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.screen { position: absolute; inset: 0; }
+
+.sheet, .board, .panel, .btn, .ticket, .sound {
+  pointer-events: auto;
+}
+
+.dim {
+  display: grid;
+  place-items: center;
+  background: rgba(58, 42, 30, 0.28);
+  pointer-events: auto;
+}
+
+[hidden] { display: none !important; }
+
+.sheet {
+  position: absolute;
+  left: 5vw;
+  top: 8vh;
+  width: min(420px, calc(100% - 32px));
+  padding: 22px 26px 20px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 22px 30px 18px 26px;
+  box-shadow: 7px 7px 0 var(--ink);
+  transform: rotate(-1.6deg);
+}
+
+.sheet::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: 42px;
+  width: 92px;
+  height: 26px;
+  background: rgba(255, 186, 96, 0.78);
+  transform: rotate(-4deg);
+  border-radius: 2px;
+}
+
+.kicker {
+  margin: 6px 0 0;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+.logo {
+  margin: 4px 0 8px;
+  font-family: "Yusei Magic", "Hiragino Maru Gothic ProN", sans-serif;
+  font-size: clamp(52px, 8vw, 74px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.logo span { position: relative; display: inline-block; }
+
+.logo span::before {
+  content: attr(data-text);
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  color: #ef6a48;
+  z-index: -1;
+}
+
+.howto {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.howto li {
+  position: relative;
+  padding-left: 16px;
+}
+
+.howto li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef6a48;
+}
+
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+.aside {
+  margin: 12px 0 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.btn {
+  border: 3px solid var(--ink);
+  background: var(--mustard);
+  border-radius: 16px 18px 13px 18px;
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 9px 16px;
+  cursor: pointer;
+  font-family: "Yusei Magic", "Hiragino Maru Gothic ProN", sans-serif;
+  font-size: 22px;
+  line-height: 1.2;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+.btn-main {
+  background: var(--coral);
+  color: #fffaf3;
+  transform: rotate(-1deg);
+  font-size: 26px;
+  padding: 10px 20px;
+}
+
+.btn-sub { background: #fffaf3; transform: rotate(1deg); }
+
+.btn-tiny {
+  font-size: 16px;
+  padding: 6px 10px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.btn:hover { transform: translateY(-2px) rotate(1deg); }
+
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn:focus-visible {
+  outline: 3px solid #2f6fbf;
+  outline-offset: 3px;
+}
+
+.btn:disabled { cursor: default; }
+
+.sound {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 4;
+  background: #fffaf3;
+}
+
+.title-stamp {
+  position: absolute;
+  right: -8px;
+  bottom: 54px;
+  border: 3px solid #d64545;
+  color: #d64545;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-family: "Yusei Magic", sans-serif;
+  transform: rotate(12deg);
+  letter-spacing: 0.12em;
+  background: rgba(255, 246, 228, 0.7);
+}
+
+.board {
+  width: min(980px, calc(100% - 28px));
+  max-height: calc(100% - 28px);
+  overflow: auto;
+  margin: 18px auto;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 26px 18px 24px 20px;
+  box-shadow: 8px 8px 0 rgba(58, 42, 30, 0.9);
+  padding: 16px 16px 20px;
+  transform: rotate(-0.25deg);
+  pointer-events: auto;
+}
+
+.board-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.board-head h2 {
+  margin: 0;
+  font-family: "Yusei Magic", sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+.ticket {
+  position: relative;
+  text-align: left;
+  min-height: 138px;
+  padding: 10px 10px 12px 16px;
+  background: var(--card, var(--paper));
+  color: var(--card-ink, var(--ink));
+  border: 3px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.ticket::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: var(--accent, var(--coral));
+}
+
+.ticket:nth-child(5n + 1) { transform: rotate(-1.3deg); }
+.ticket:nth-child(5n + 2) { transform: rotate(0.8deg); }
+.ticket:nth-child(5n + 3) { transform: rotate(-0.4deg); }
+.ticket:nth-child(5n + 4) { transform: rotate(1.1deg); }
+.ticket:nth-child(5n + 5) { transform: rotate(-0.9deg); }
+
+.ticket:hover:not(:disabled) { transform: rotate(0deg) translateY(-3px); }
+
+.ticket:disabled { cursor: not-allowed; }
+
+.ticket.locked {
+  background: repeating-linear-gradient(135deg, #efe4d0, #efe4d0 8px, #e5d7c0 8px, #e5d7c0 16px);
+  color: #8a7564;
+}
+
+.ticket .num {
+  font-family: "Yusei Magic", sans-serif;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.ticket .name { font-weight: 700; margin-top: 2px; }
+
+.ticket .sub {
+  font-size: 12px;
+  opacity: 0.8;
+  min-height: 2.4em;
+}
+
+.ticket .meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ticket .time { font-size: 12px; }
+
+.stamp {
+  position: absolute;
+  right: 8px;
+  top: 28px;
+  border: 3px solid #d64545;
+  color: #d64545;
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-family: "Yusei Magic", sans-serif;
+  font-size: 14px;
+  transform: rotate(-14deg);
+  letter-spacing: 0.08em;
+  background: rgba(255, 250, 243, 0.55);
+}
+
+.berries { display: inline-flex; gap: 4px; }
+
+.berry {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  display: inline-block;
+  position: relative;
+  background: transparent;
+}
+
+.berry.on { background: #ef5d45; border-color: var(--ink); }
+
+.berry::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 4px;
+  left: 3px;
+  top: -4px;
+  background: #5aaa40;
+  border-radius: 4px 4px 1px 1px;
+  transform: rotate(18deg);
+}
+
+#hud {
+  position: absolute;
+  inset: 0;
+}
+
+.tape {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 244, 214, 0.94);
+  border: 3px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  border-radius: 6px 10px 8px 12px;
+  transform: rotate(-2deg);
+  padding: 6px 12px 7px;
+  font-family: "Yusei Magic", sans-serif;
+  font-size: 20px;
+}
+
+#hud-fruits {
+  position: absolute;
+  top: 18px;
+  right: 74px;
+  display: flex;
+  gap: 6px;
+  background: rgba(255, 250, 243, 0.92);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 10px 4px;
+  box-shadow: 3px 3px 0 var(--ink);
+  transform: rotate(1.5deg);
+}
+
+#btn-pause {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 46px;
+  height: 42px;
+  padding: 0;
+  background: #fffaf3;
+}
+
+.pause-ico {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.pause-ico i {
+  width: 4px;
+  height: 14px;
+  background: var(--ink);
+  display: block;
+  border-radius: 1px;
+}
+
+.banner {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  border-radius: 14px 18px 12px 16px;
+  padding: 10px 18px;
+  font-family: "Yusei Magic", sans-serif;
+  font-size: 28px;
+  opacity: 0;
+}
+
+.banner.show { animation: slip 1.9s ease both; }
+
+.jump-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%) rotate(-1deg);
+  background: rgba(255, 246, 228, 0.92);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: "Yusei Magic", sans-serif;
+  box-shadow: 3px 3px 0 var(--ink);
+  opacity: 0;
+}
+
+.jump-hint.show { animation: fadehint 3.6s ease both; }
+
+.panel {
+  width: min(440px, calc(100% - 28px));
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: 20px 26px 16px 22px;
+  box-shadow: 7px 7px 0 var(--ink);
+  padding: 22px 22px 18px;
+  text-align: center;
+  transform: rotate(-1deg);
+  pointer-events: auto;
+}
+
+.panel h2, .panel h3 {
+  margin: 0 0 8px;
+  font-family: "Yusei Magic", sans-serif;
+  font-weight: 400;
+  font-size: 36px;
+}
+
+.panel p { margin: 6px 0; }
+
+.time-read {
+  font-family: "Yusei Magic", sans-serif;
+  font-size: 28px;
+}
+
+.record {
+  display: inline-block;
+  margin-top: 4px;
+  border: 3px solid #d64545;
+  color: #d64545;
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-family: "Yusei Magic", sans-serif;
+  transform: rotate(-8deg);
+}
+
+.note { font-size: 14px; }
+
+@keyframes slip {
+  0% { opacity: 0; transform: translateX(-46%) translateY(10px) rotate(-4deg); }
+  12% { opacity: 1; transform: translateX(-50%) rotate(-2deg); }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-54%) translateY(-8px) rotate(-1deg); }
+}
+
+@keyframes fadehint {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sheet { top: auto; bottom: 16px; left: 12px; }
+}
+
+@media (max-width: 640px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .logo { font-size: 48px; }
+  .banner { font-size: 20px; max-width: calc(100% - 24px); text-align: center; }
+  .tape { font-size: 16px; max-width: 58vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .ticket, .banner, .jump-hint { transition: none; animation: none; }
+  .banner.show, .jump-hint.show { opacity: 1; }
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ポヨラン</title>
+  <meta name="description" content="ひとりでに走る、ジャンプだけのランゲーム。ながおしで高く、はなすと小さく。">
+  <meta name="theme-color" content="#ffd7a4">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='36' r='18' fill='%23ffe3a8' stroke='%234a301c' stroke-width='4'/%3E%3Ccircle cx='26' cy='34' r='2.4' fill='%233a2718'/%3E%3Ccircle cx='39' cy='34' r='2.4' fill='%233a2718'/%3E%3Cellipse cx='32' cy='16' rx='4' ry='8' fill='%235aaa3e' stroke='%232f6a28' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="view" width="960" height="540"></canvas>
+  <div id="grain" aria-hidden="true"></div>
+  <div id="ui">
+    <button id="btn-mute" class="btn btn-tiny sound" type="button" aria-pressed="false">おと オン</button>
+
+    <section id="screen-title" class="screen">
+      <div class="sheet">
+        <p class="kicker">ひとりでに はしる</p>
+        <h1 class="logo"><span data-text="ポヨラン">ポヨラン</span></h1>
+        <ul class="howto">
+          <li>スペースか、クリックか、タップでジャンプ</li>
+          <li>ながくおしているあいだ、たかくとぶ</li>
+          <li>はなしたところで、たかさがきまる</li>
+        </ul>
+        <div class="row">
+          <button id="btn-start" class="btn btn-main" type="button">はしりだす</button>
+          <button id="btn-open-select" class="btn btn-sub" type="button">ステージをえらぶ</button>
+        </div>
+        <p class="aside">うごいているゆかのいきおいは、ジャンプのあとも残るよ。</p>
+        <div id="title-stamp" class="title-stamp" hidden>かんぜん</div>
+      </div>
+    </section>
+
+    <section id="screen-select" class="screen" hidden>
+      <div class="board">
+        <div class="board-head">
+          <button id="btn-back" class="btn btn-tiny" type="button">もどる</button>
+          <h2>どこをはしる？</h2>
+        </div>
+        <div id="stage-grid" class="grid"></div>
+      </div>
+    </section>
+
+    <div id="hud" hidden>
+      <div id="hud-name" class="tape"></div>
+      <div id="hud-fruits" class="berries"></div>
+      <button id="btn-pause" class="btn btn-tiny" type="button" aria-label="ひとやすみ">
+        <span class="pause-ico" aria-hidden="true"><i></i><i></i></span>
+      </button>
+    </div>
+
+    <div id="banner" class="banner"></div>
+    <div id="jump-hint" class="jump-hint" hidden>スペース / クリック / タップ</div>
+
+    <section id="screen-pause" class="screen dim" hidden>
+      <div class="panel">
+        <h2>ひとやすみ</h2>
+        <p>ポヨは そのばで ふみとどまってる。</p>
+        <div class="row" style="justify-content: center; margin-top: 14px;">
+          <button id="btn-resume" class="btn btn-main" type="button">つづける</button>
+          <button id="btn-quit" class="btn btn-sub" type="button">ステージをえらぶ</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-clear" class="screen dim" hidden>
+      <div class="panel">
+        <h2 id="clear-title">ステージクリア</h2>
+        <p id="clear-time" class="time-read"></p>
+        <div id="clear-fruits" class="berries" style="justify-content: center;"></div>
+        <div id="clear-record" class="record" hidden>きろく</div>
+        <p id="clear-note" class="note" hidden></p>
+        <div class="row" style="justify-content: center; margin-top: 16px;">
+          <button id="btn-next" class="btn btn-main" type="button">つぎへ</button>
+          <button id="btn-clear-select" class="btn btn-sub" type="button">えらびなおす</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
