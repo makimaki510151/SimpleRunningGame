@@ -4,11 +4,17 @@ import { cloneWorld, createWorld, tick, GROUND_Y, PLAYER_W } from "../js/sim.js"
 const DT = 1 / 60;
 const HOLDS = [0, 0.05, 0.1, 0.16, 0.24, 0.36, 0.58];
 const WAITS = [0, 0.08, 0.16, 0.26, 0.38, 0.52, 0.7, 0.95, 1.2];
+const WAITS2 = [0, 0.18, 0.4, 0.62, 0.9];
+const HOLDS2 = [0.05, 0.16, 0.36, 0.58];
+const AGAINS = [0.18, 0.3, 0.42, 0.56];
+const HOLD2S = [0.05, 0.18, 0.5];
 
 function forecast(world, action, limit = 3.5) {
   const w = cloneWorld(world);
   let t = 0;
   let pressed = false;
+  let second = false;
+  let firstAt = 0;
   let holdLeft = 0;
   let sawAir = false;
   const inputOf = () => {
@@ -16,8 +22,14 @@ function forecast(world, action, limit = 3.5) {
     let jumpPressed = false;
     if (!pressed && t >= action.wait) {
       pressed = true;
+      firstAt = t;
       jumpPressed = true;
       holdLeft = action.hold;
+    }
+    if (pressed && action.again != null && !second && t >= firstAt + action.again) {
+      second = true;
+      jumpPressed = true;
+      holdLeft = action.hold2;
     }
     const jumpHeld = pressed && holdLeft > 0;
     return { jumpPressed, jumpHeld };
@@ -62,15 +74,29 @@ function landingResult(world) {
   return { ok, landX: p.x, world };
 }
 
+function collect(world, plans, action) {
+  const result = forecast(world, action, 4.2);
+  if (result.ok) plans.push({ ...action, type: "jump", landX: result.landX });
+}
+
 function choose(world) {
   const nothing = forecast(world, { type: "none" }, 2.5);
   if (nothing.ok) return { type: "none" };
 
   const plans = [];
   for (const wait of WAITS) {
-    for (const hold of HOLDS) {
-      const result = forecast(world, { type: "jump", wait, hold }, 4);
-      if (result.ok) plans.push({ wait, hold, landX: result.landX });
+    for (const hold of HOLDS) collect(world, plans, { type: "jump", wait, hold });
+  }
+  const bestSingle = plans.reduce((best, plan) => (plan.landX > best ? plan.landX : best), 0);
+  if (bestSingle < world.player.x + 170) {
+    for (const wait of WAITS2) {
+      for (const hold of HOLDS2) {
+        for (const again of AGAINS) {
+          for (const hold2 of HOLD2S) {
+            collect(world, plans, { type: "jump", wait, hold, again, hold2 });
+          }
+        }
+      }
     }
   }
   if (!plans.length) return { type: "stuck" };
@@ -81,7 +107,7 @@ function choose(world) {
       plan.slack = true;
       continue;
     }
-    const late = forecast(world, { type: "jump", wait: plan.wait + 0.07, hold: plan.hold }, 4);
+    const late = forecast(world, { ...plan, wait: plan.wait + 0.07 }, 4);
     plan.slack = late.ok && late.landX >= maxX - 100;
   }
   pool.sort((a, b) => {
@@ -97,14 +123,14 @@ function choose(world) {
 
 function play(stage) {
   const world = createWorld(stage);
-  const bot = { holdLeft: 0, jumpAt: null, hold: 0, note: "start" };
+  const bot = { holdLeft: 0, jumps: [], note: "start" };
   const deaths = [];
   const limit = 60 * 150;
   for (let i = 0; i < limit; i++) {
     let input = { jumpPressed: false, jumpHeld: false };
     if (!world.player.alive) {
       bot.holdLeft = 0;
-      bot.jumpAt = null;
+      bot.jumps = [];
     } else if (world.player.won) {
       return {
         ok: true,
@@ -114,36 +140,38 @@ function play(stage) {
         missed: world.pickups.filter((fruit) => !fruit.got).map((fruit) => `${Math.round(fruit.x)},${Math.round(fruit.y)}`),
         deaths: deaths.length,
       };
-    } else if (bot.holdLeft > 0) {
+    } else if (bot.holdLeft > 0 && !(bot.jumps.length && world.t + 1e-4 >= bot.jumps[0].at)) {
       bot.holdLeft -= DT;
       input.jumpHeld = bot.holdLeft > 0;
-    } else if (bot.jumpAt != null) {
-      if (world.t + 1e-4 >= bot.jumpAt) {
-        bot.holdLeft = bot.hold;
-        bot.jumpAt = null;
+    } else if (bot.jumps.length) {
+      if (world.t + 1e-4 >= bot.jumps[0].at) {
+        const jump = bot.jumps.shift();
+        bot.holdLeft = jump.hold;
         input.jumpPressed = true;
         input.jumpHeld = true;
         bot.note = "jump";
       }
     } else {
       const plan = choose(world);
-      bot.note = plan.type === "jump" ? `jump wait ${plan.wait} hold ${plan.hold}` : plan.type;
+      const air = plan.again != null ? ` air ${plan.again}/${plan.hold2}` : "";
+      bot.note = plan.type === "jump" ? `jump wait ${plan.wait} hold ${plan.hold}${air}` : plan.type;
       if (plan.type === "jump") {
+        const first = world.t + plan.wait;
         if (plan.wait <= DT) {
           bot.holdLeft = plan.hold;
           input.jumpPressed = true;
           input.jumpHeld = true;
         } else {
-          bot.jumpAt = world.t + plan.wait;
-          bot.hold = plan.hold;
+          bot.jumps.push({ at: first, hold: plan.hold });
         }
+        if (plan.again != null) bot.jumps.push({ at: first + plan.again, hold: plan.hold2 });
       }
     }
 
     const events = tick(world, input, DT);
     if (events.some((event) => event.type === "death")) {
       deaths.push(Math.round(world.player.x));
-      bot.jumpAt = null;
+      bot.jumps = [];
       bot.holdLeft = 0;
       const recent = deaths.slice(-4);
       if (recent.length >= 4 && recent.every((x) => Math.abs(x - recent[0]) < 90)) {

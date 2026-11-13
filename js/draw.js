@@ -44,7 +44,11 @@ export function drawFrame(ctx, world, cam, layout, vis, particles, shake) {
   const sy = shake ? Math.cos(vis.phase * 33) * shake * 0.6 : 0;
   drawBackdrop(ctx, world, cam, palette);
   ctx.save();
-  ctx.translate(-cam.x + sx, -cam.y + sy);
+  const snap = scale * dpr;
+  ctx.translate(
+    Math.round((-cam.x + sx) * snap) / snap,
+    Math.round((-cam.y + sy) * snap) / snap,
+  );
   drawPit(ctx, world, cam, palette);
   drawWind(ctx, world, palette);
   drawSolids(ctx, world, cam, palette);
@@ -257,15 +261,31 @@ function drawSolids(ctx, world, cam, palette) {
   }
 }
 
+function groundTop(x, y) {
+  return y + Math.sin(x * 0.07) * 3;
+}
+
+function groundPoints(x0, x1, y) {
+  const step = 14;
+  const points = [x0];
+  const start = Math.ceil((x0 + 0.01) / step) * step;
+  for (let x = start; x < x1 - 0.5; x += step) points.push(x);
+  if (points[points.length - 1] !== x1) points.push(x1);
+  return points.map((x) => ({ x, y: groundTop(x, y) }));
+}
+
 function drawGround(ctx, solid, cam, palette) {
   const y = solid.y;
   const x0 = Math.max(solid.x, cam.x - 40);
   const x1 = Math.min(solid.x + solid.w, cam.x + VIEW_W + 40);
   if (x1 <= x0) return;
-  const step = 14;
+  const top = groundPoints(x0, x1, y);
+  const rightLip = x1 >= solid.x + solid.w - 0.01;
+  const leftLip = x0 <= solid.x + 0.01;
+
   ctx.beginPath();
-  ctx.moveTo(x0, y + 8);
-  for (let x = x0; x <= x1; x += step) ctx.lineTo(x, y + Math.sin(x * 0.07) * 3);
+  ctx.moveTo(top[0].x, top[0].y);
+  for (let i = 1; i < top.length; i++) ctx.lineTo(top[i].x, top[i].y);
   ctx.lineTo(x1, y + 220);
   ctx.lineTo(x0, y + 220);
   ctx.closePath();
@@ -278,15 +298,33 @@ function drawGround(ctx, solid, cam, palette) {
   ctx.fillStyle = palette.groundDeep;
   ctx.fillRect(x0, y + 24, x1 - x0, 200);
   ctx.restore();
+
   ctx.beginPath();
-  for (let x = x0; x <= x1; x += step) {
-    const py = y + Math.sin(x * 0.07) * 3;
-    if (x === x0) ctx.moveTo(x, py);
-    else ctx.lineTo(x, py);
-  }
+  ctx.moveTo(top[0].x, top[0].y);
+  for (let i = 1; i < top.length; i++) ctx.lineTo(top[i].x, top[i].y);
   ctx.strokeStyle = palette.rim || palette.ink;
   ctx.lineWidth = 3.5;
   ctx.stroke();
+
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = palette.rim || palette.ink;
+  ctx.fillStyle = palette.soil;
+  if (rightLip) {
+    const lip = top[top.length - 1].y;
+    ctx.fillRect(x1 - 12, lip, 12, 56);
+    ctx.beginPath();
+    ctx.moveTo(x1, lip);
+    ctx.lineTo(x1, lip + 64);
+    ctx.stroke();
+  }
+  if (leftLip) {
+    const lip = top[0].y;
+    ctx.fillRect(x0, lip, 12, 56);
+    ctx.beginPath();
+    ctx.moveTo(x0, lip);
+    ctx.lineTo(x0, lip + 64);
+    ctx.stroke();
+  }
 }
 
 function drawPlatform(ctx, solid, t, palette) {
@@ -562,23 +600,25 @@ function drawGoal(ctx, world, palette) {
 }
 
 function drawHints(ctx, world, cam, palette) {
-  ctx.font = '17px "Yusei Magic", "Yu Gothic", sans-serif';
+  ctx.font = '22px "Yusei Magic", "Yu Gothic", sans-serif';
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   for (const hint of world.stage.hints || []) {
-    if (hint.x < cam.x - 300 || hint.x > cam.x + VIEW_W + 80) continue;
-    const width = Math.min(320, ctx.measureText(hint.text).width + 26);
+    if (hint.x < cam.x - 420 || hint.x > cam.x + VIEW_W + 40) continue;
+    const width = Math.min(460, ctx.measureText(hint.text).width + 36);
     ctx.save();
     ctx.translate(hint.x, hint.y);
-    ctx.rotate(-0.04);
+    ctx.rotate(-0.03);
+    ctx.fillStyle = "#8a5a32";
+    ctx.fillRect(18, 46, 8, 28);
     ctx.fillStyle = "#f0d2a4";
     ctx.strokeStyle = "#4a301c";
     ctx.lineWidth = 3;
-    pathRound(ctx, 0, 0, width, 36, 8);
+    pathRound(ctx, 0, 0, width, 48, 10);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#4a301c";
-    ctx.fillText(hint.text, 13, 19);
+    ctx.fillText(hint.text, 16, 25);
     ctx.restore();
   }
 }

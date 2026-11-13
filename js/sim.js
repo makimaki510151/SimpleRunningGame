@@ -18,6 +18,7 @@ export const GRAVITY_BOUNCE = 2350;
 export const APEX_BAND = 130;
 
 export const JUMP_V = -860;
+export const AIR_JUMP_V = -860;
 export const JUMP_CUT = -500;
 export const BOUNCE_V = -1040;
 
@@ -99,6 +100,7 @@ export function createWorld(stage, opts = {}) {
     invuln: 0,
     rideVx: 0,
     rideVy: 0,
+    airJumps: 1,
   };
   world.spawn = { x: spawnX, y, solidId: solid ? solid.id : null };
   return world;
@@ -186,7 +188,17 @@ export function tick(world, input, dt) {
     p.holdTime = 0;
     p.rideVx = 0;
     p.rideVy = 0;
-    events.push({ type: "jump", x: p.x + p.w * 0.5, y: p.y + p.h });
+    p.airJumps = 1;
+    events.push({ type: "jump", air: false, x: p.x + p.w * 0.5, y: p.y + p.h });
+  } else if (!p.won && p.buffer > 0 && p.airJumps > 0) {
+    p.airJumps -= 1;
+    p.vy = AIR_JUMP_V;
+    p.holding = !!input.jumpHeld;
+    p.canCut = true;
+    p.holdTime = 0;
+    p.buffer = 0;
+    p.coyote = 0;
+    events.push({ type: "jump", air: true, x: p.x + p.w * 0.5, y: p.y + p.h });
   }
 
   if (!input.jumpHeld) p.holding = false;
@@ -211,6 +223,7 @@ export function tick(world, input, dt) {
       p.onGround = true;
       p.coyote = 0;
       p.canCut = false;
+      p.airJumps = 1;
       p.rideVx = stand.vx;
       p.rideVy = stand.vy;
     } else {
@@ -311,6 +324,7 @@ function launchBounce(world, p, stand, events) {
   p.canCut = false;
   p.holdTime = 0;
   p.coyote = 0;
+  p.airJumps = 1;
   p.rideVx = 0;
   p.rideVy = 0;
   p.y = stand.y - p.h - 1;
@@ -364,6 +378,7 @@ function resolveLanding(world, p, prevY, events) {
   p.canCut = false;
   p.holding = false;
   p.coyote = 0;
+  p.airJumps = 1;
   p.rideVx = best.vx;
   p.rideVy = best.vy;
   if (best.crumble && !best.armed) {
@@ -500,6 +515,7 @@ function respawn(world, events) {
   p.invuln = 0.7;
   p.rideVx = 0;
   p.rideVy = 0;
+  p.airJumps = 1;
   events.push({ type: "respawn", x: p.x, y: p.y });
 }
 

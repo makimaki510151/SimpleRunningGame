@@ -14,6 +14,7 @@ const hudName = document.querySelector("#hud-name");
 const hudFruits = document.querySelector("#hud-fruits");
 const banner = document.querySelector("#banner");
 const jumpHint = document.querySelector("#jump-hint");
+const signboard = document.querySelector("#signboard");
 const grid = document.querySelector("#stage-grid");
 const muteButton = document.querySelector("#btn-mute");
 const titleStamp = document.querySelector("#title-stamp");
@@ -47,6 +48,15 @@ const game = createGame(canvas, {
       flashJumpHint();
     }
     if (detail.mode === "clear") showClear(detail);
+    if (detail.mode !== "play") {
+      signboard.hidden = true;
+      signboard.textContent = "";
+    }
+    queueMicrotask(() => focusFor(detail.mode));
+  },
+  onSign(text) {
+    signboard.hidden = !text;
+    signboard.textContent = text || "";
   },
   onFruit(detail) {
     runFruits.got = detail.got;
@@ -138,14 +148,14 @@ function showClear(detail) {
   writeSave(save);
 
   const last = index === STAGES.length - 1;
-  clearTitle.textContent = last ? "にじのてまで とどいた" : "ステージクリア";
+  clearTitle.textContent = last ? "つきのうらまで とどいた" : "ステージクリア";
   clearTime.textContent = formatTime(result.time);
   clearRecord.hidden = !isRecord;
   clearNote.hidden = !last;
   clearNext.textContent = last ? "ステージをえらぶ" : "つぎへ";
   paintBerries(clearFruits, result.fruits, result.total);
   if (last && save.cleared.every(Boolean)) {
-    clearNote.textContent = "10ステージ、ぜんぶクリア。ポヨはまだ走りたそう。";
+    clearNote.textContent = "15ステージ、ぜんぶクリア。ポヨはまだ走りたそう。";
   } else if (last) {
     clearNote.textContent = "おつかれさま。のこりのステージも、また走れる。";
   }
@@ -241,3 +251,150 @@ function loadSave(count) {
 function writeSave(saveData) {
   localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 }
+
+function menuButtons() {
+  return [...document.querySelectorAll("#ui button")].filter((button) => {
+    if (button.disabled || button.id === "btn-pause") return false;
+    return button.getClientRects().length > 0;
+  });
+}
+
+function focusFor(mode) {
+  if (mode === "title") document.querySelector("#btn-start")?.focus();
+  else if (mode === "select") document.querySelector("#stage-grid .ticket:not(:disabled)")?.focus();
+  else if (mode === "pause") document.querySelector("#btn-resume")?.focus();
+  else if (mode === "clear") document.querySelector("#btn-next")?.focus();
+  else if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+
+function moveFocus(dir) {
+  const buttons = menuButtons();
+  if (!buttons.length) return;
+  const current = buttons.includes(document.activeElement) ? document.activeElement : null;
+  if (!current) {
+    buttons[0].focus();
+    return;
+  }
+  const from = current.getBoundingClientRect();
+  const cx = from.left + from.width / 2;
+  const cy = from.top + from.height / 2;
+  let best = null;
+  let bestScore = Infinity;
+  for (const button of buttons) {
+    if (button === current) continue;
+    const rect = button.getBoundingClientRect();
+    const x = rect.left + rect.width / 2 - cx;
+    const y = rect.top + rect.height / 2 - cy;
+    if (dir === "left" && x >= -8) continue;
+    if (dir === "right" && x <= 8) continue;
+    if (dir === "up" && y >= -8) continue;
+    if (dir === "down" && y <= 8) continue;
+    const primary = dir === "left" || dir === "right" ? Math.abs(x) : Math.abs(y);
+    const secondary = (dir === "left" || dir === "right" ? Math.abs(y) : Math.abs(x)) * 2.4;
+    const score = primary + secondary;
+    if (score < bestScore) {
+      bestScore = score;
+      best = button;
+    }
+  }
+  if (!best) return;
+  best.focus();
+  best.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function activateFocused() {
+  const buttons = menuButtons();
+  const current = buttons.includes(document.activeElement) ? document.activeElement : buttons[0];
+  current?.click();
+}
+
+function goBack() {
+  const mode = document.body.dataset.mode;
+  if (mode === "select") document.querySelector("#btn-back")?.click();
+  else if (mode === "pause") document.querySelector("#btn-resume")?.click();
+  else if (mode === "clear") document.querySelector("#btn-clear-select")?.click();
+}
+
+window.addEventListener("keydown", (event) => {
+  const mode = document.body.dataset.mode;
+  if (!mode || mode === "play") return;
+  const dir = {
+    ArrowLeft: "left",
+    ArrowRight: "right",
+    ArrowUp: "up",
+    ArrowDown: "down",
+    KeyA: "left",
+    KeyD: "right",
+    KeyW: "up",
+    KeyS: "down",
+  }[event.code];
+  if (dir) {
+    event.preventDefault();
+    moveFocus(dir);
+    return;
+  }
+  if (event.code === "Escape" || event.code === "Backspace") {
+    if (mode === "pause") return;
+    event.preventDefault();
+    goBack();
+    return;
+  }
+  if (event.code === "Enter" || event.code === "Space") {
+    if (event.repeat) return;
+    event.preventDefault();
+    if (menuButtons().includes(document.activeElement)) document.activeElement.click();
+    else activateFocused();
+  }
+});
+
+const padMemory = { buttons: [], dir: "", next: 0 };
+
+function stickDir(pad) {
+  if (pad.buttons[12]?.pressed) return "up";
+  if (pad.buttons[15]?.pressed) return "right";
+  if (pad.buttons[13]?.pressed) return "down";
+  if (pad.buttons[14]?.pressed) return "left";
+  const x = pad.axes[0] || 0;
+  const y = pad.axes[1] || 0;
+  if (Math.hypot(x, y) < 0.52) return "";
+  if (Math.abs(x) > Math.abs(y)) return x > 0 ? "right" : "left";
+  return y > 0 ? "down" : "up";
+}
+
+function pollPad(now) {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  let pad = null;
+  for (const item of pads) if (item) pad = item;
+  if (pad) {
+    const pressed = (index) => !!pad.buttons[index]?.pressed;
+    const edge = (index) => pressed(index) && !padMemory.buttons[index];
+    const mode = document.body.dataset.mode || "title";
+    if (mode === "play") {
+      const held = [0, 1, 2, 3, 5, 7].some(pressed);
+      const was = [0, 1, 2, 3, 5, 7].some((index) => padMemory.buttons[index]);
+      game.padJump(held, held && !was);
+      if (edge(8) || edge(9)) game.pause();
+    } else {
+      game.padJump(false, false);
+      const dir = stickDir(pad);
+      if (dir && (dir !== padMemory.dir || now >= padMemory.next)) {
+        moveFocus(dir);
+        padMemory.next = now + (dir === padMemory.dir ? 170 : 260);
+      }
+      if (!dir) padMemory.next = 0;
+      padMemory.dir = dir;
+      if (edge(0)) activateFocused();
+      if (edge(1)) goBack();
+      if (edge(9)) {
+        if (mode === "pause") game.resume();
+        else if (mode === "title") document.querySelector("#btn-start")?.click();
+        else if (mode === "clear") document.querySelector("#btn-next")?.click();
+      }
+      if (edge(8)) goBack();
+    }
+    padMemory.buttons = pad.buttons.map((button) => button.pressed);
+  }
+  requestAnimationFrame(pollPad);
+}
+
+requestAnimationFrame(pollPad);

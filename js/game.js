@@ -22,7 +22,10 @@ export function createGame(canvas, hooks) {
   let confetti = 0;
   const keys = { jump: false };
   let pointerJump = false;
+  let padJump = false;
   let jumpPressed = false;
+  let sign = null;
+  let signUntil = 0;
 
   function emit(name, detail) {
     hooks[name]?.(detail);
@@ -75,7 +78,11 @@ export function createGame(canvas, hooks) {
     pendingClear = null;
     keys.jump = false;
     pointerJump = false;
+    padJump = false;
     jumpPressed = false;
+    sign = null;
+    signUntil = 0;
+    emit("onSign", "");
     mode = "play";
     snapCamera(0.34);
     emit("onMode", { mode, stage: STAGES[index], index });
@@ -111,8 +118,18 @@ export function createGame(canvas, hooks) {
     mode = "play";
     keys.jump = false;
     pointerJump = false;
+    padJump = false;
     jumpPressed = false;
     emit("onMode", { mode, stage: STAGES[stageIndex], index: stageIndex });
+  }
+
+  function padJumpInput(held, pressed) {
+    if (mode !== "play") {
+      padJump = false;
+      return;
+    }
+    if (pressed) jumpPressed = true;
+    padJump = held;
   }
 
   function next() {
@@ -125,7 +142,7 @@ export function createGame(canvas, hooks) {
     const input = { jumpPressed: false, jumpHeld: false };
     if (mode === "play") {
       input.jumpPressed = jumpPressed;
-      input.jumpHeld = keys.jump || pointerJump;
+      input.jumpHeld = keys.jump || pointerJump || padJump;
       jumpPressed = false;
     } else if (mode === "title" || mode === "select") {
       attract.timer += dt;
@@ -147,6 +164,7 @@ export function createGame(canvas, hooks) {
     for (const event of events) handleEvent(event);
     updateVis(dt);
     updateCamera(dt);
+    updateSign();
     particles.update(dt);
 
     if (pendingClear && world.winTimer > 0.75 && mode === "play") {
@@ -163,9 +181,27 @@ export function createGame(canvas, hooks) {
   function handleEvent(event) {
     const palette = world.stage.palette;
     if (event.type === "jump") {
-      audio.jump();
-      vis.squash = 1.28;
-      vis.stretch = 0.68;
+      audio.jump(event.air);
+      vis.squash = event.air ? 0.72 : 1.28;
+      vis.stretch = event.air ? 1.36 : 0.68;
+      if (event.air) {
+        particles.spawn({
+          shape: "ring",
+          x: event.x,
+          y: event.y - 8,
+          vx: 0,
+          vy: 0,
+          life: 0.28,
+          max: 0.28,
+          size: 8,
+          color: palette.accent,
+          rot: 0,
+          vr: 0,
+          g: 0,
+          grow: 54,
+          text: "",
+        });
+      }
       particles.burst(event.x, event.y, 8, {
         colors: [palette.accent, palette.accent2 || "#fff", "#fff6d4"],
         shapes: ["tri", "diamond", "rect"],
@@ -416,6 +452,32 @@ export function createGame(canvas, hooks) {
     if (shake > 0) shake = Math.max(0, shake - dt * 14);
   }
 
+  function updateSign() {
+    if (mode !== "play") {
+      if (sign) {
+        sign = null;
+        emit("onSign", "");
+      }
+      return;
+    }
+    const px = world.player.x;
+    let candidate = null;
+    for (const hint of world.stage.hints || []) {
+      if (px > hint.x - 620 && px < hint.x + 36) {
+        candidate = hint;
+        break;
+      }
+    }
+    if (candidate && candidate !== sign) {
+      sign = candidate;
+      signUntil = world.elapsed + 3.1;
+      emit("onSign", candidate.text);
+    } else if (sign && world.elapsed > signUntil && px > sign.x + 90) {
+      sign = null;
+      emit("onSign", "");
+    }
+  }
+
   function updateCamera(dt) {
     const p = world.player;
     const anchor = mode === "play" || mode === "pause" || mode === "clear" ? 0.34 : 0.66;
@@ -438,6 +500,7 @@ export function createGame(canvas, hooks) {
       step(STEP);
       frame.acc -= STEP;
     }
+    audio.pump();
     drawFrame(canvas.getContext("2d"), world, cam, layout, vis, particles, shake);
     requestAnimationFrame(frame);
   }
@@ -491,6 +554,7 @@ export function createGame(canvas, hooks) {
   return {
     audio,
     play,
+    padJump: padJumpInput,
     showTitle,
     showSelect,
     pause,

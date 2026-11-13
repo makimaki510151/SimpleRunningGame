@@ -173,3 +173,47 @@ for (const speed of [240, 270, 310, 340]) {
     }
   }
 }
+
+function measureDouble(speed, hold, again, hold2) {
+  const world = createWorld(flatStage(speed));
+  const startY = world.player.y;
+  let first = false;
+  let second = false;
+  let sx = 0;
+  let t0 = 0;
+  let minY = startY;
+  for (let i = 0; i < 500; i++) {
+    const t = i * DT;
+    let jumpPressed = false;
+    let jumpHeld = false;
+    if (!first && t >= 0.05) {
+      jumpPressed = true;
+      first = true;
+      t0 = t;
+      sx = world.player.x;
+    }
+    if (first && !second && t < t0 + hold) jumpHeld = true;
+    if (first && !second && t >= t0 + again) {
+      jumpPressed = true;
+      second = true;
+      t0 = t;
+    }
+    if (second && t < t0 + hold2) jumpHeld = true;
+    tick(world, { jumpPressed, jumpHeld }, DT);
+    if (world.player.y < minY) minY = world.player.y;
+    if (second && world.player.onGround && t > t0 + 0.08) {
+      return { height: Math.round(startY - minY), dist: Math.round(world.player.x - sx) };
+    }
+  }
+  return { height: Math.round(startY - minY), dist: null };
+}
+
+console.log("\ndouble");
+for (const speed of [240, 292, 310, 324]) {
+  for (const again of [0.2, 0.35, 0.5]) {
+    const m = measureDouble(speed, 0.55, again, 0.55);
+    console.log(`  v${speed} again ${again} h ${m.height} dist ${m.dist}`);
+  }
+  const late = measureDouble(speed, 0.12, 0.42, 0.16);
+  console.log(`  v${speed} short-then-pop h ${late.height} dist ${late.dist}`);
+}

@@ -6,8 +6,11 @@
 //   タップ        高さ 30px   距離 90px
 //   ちょっと押し  高さ 80px   距離 130px
 //   長押し       高さ 170px  距離 190px（速度が上がると距離は伸びる）
-//   ばね         高さ 220px  距離 230px
-// 隙間は届きより少し短く置く。
+//   二段（跳んで 0.35 秒後にもう一度長押し） 高さ 約 346px
+//     距離の目安: 速度 292 で 384px、310 で 408px、324 で 427px
+//   ばね         高さ 220px  距離 230px（速度 240 のとき）
+// 一段の長押しは高さ 177px。それより 30px 以上高い足場は二段がいる。
+// 一段で届かない隙間は、その速度の長押し距離（速度 310 なら 253px）より広く。
 
 import { GROUND_Y } from "./sim.js";
 
@@ -456,7 +459,7 @@ const STAGES_SRC = [
   {
     id: 8,
     name: "ゆれる振り子",
-    subtitle: "いきおいを もらってとぶ",
+    subtitle: "だんさを とびこえよう",
     speed: 296,
     dress: "clock",
     palette: palette({
@@ -487,21 +490,20 @@ const STAGES_SRC = [
       const ground = (w) => { b.ground(x, w); x += w; };
       const gap = (w) => { x += w; };
       const plat = (w, y) => { b.plat(x, y, w); x += w; };
-      const mover = (w, y, move) => { b.mover(x, y, w, move); x += w; };
 
       ground(520);
-      b.hint(140, 292, "ゆかが あがるときに ジャンプ");
+      b.hint(140, 292, "だんさは おす長さで たかさをあわせる");
       b.fruit(360, 356);
-      gap(64);
-      mover(460, 400, { axis: "y", amp: 68, period: 2.35, phase: 0.4 });
+      gap(78);
+      plat(180, 332);
       gap(70);
-      plat(300, 196);
+      plat(170, 264);
+      gap(66);
+      plat(320, 196);
       b.fruit(x - 180, 152);
       b.check(x - 260, 196);
-      b.hint(x - 280, 150, "つぎは ゆかのいきおいで とおくへ");
-      gap(60);
-      mover(280, 250, { axis: "x", amp: 54, period: 2.05, phase: 0.2 });
-      gap(210);
+      b.hint(x - 300, 150, "つぎの谷は ながくおしてわたる");
+      gap(168);
       ground(420);
       b.fruit(x - 250, 300);
       gap(90);
@@ -616,7 +618,6 @@ const STAGES_SRC = [
       const plat = (w, y) => { b.plat(x, y, w); x += w; };
       const bounce = (w, y = GROUND_Y) => { b.bounce(x, y, w); x += w; };
       const crumble = (w, y, delay = 0.42) => { b.crumble(x, y, w, delay); x += w; };
-      const mover = (w, y, move) => { b.mover(x, y, w, move); x += w; };
 
       ground(640);
       b.hint(150, 292, "さいごは いままでの ぜんぶ");
@@ -652,16 +653,16 @@ const STAGES_SRC = [
       ground(340);
       b.check(x - 280);
 
-      b.hint(x - 250, 292, "あがるゆかで もういちだん");
-      gap(60);
-      mover(400, 400, { axis: "y", amp: 60, period: 2.4, phase: 0.8 });
+      b.hint(x - 250, 292, "だんさは おす長さで もういちだん");
+      gap(72);
+      plat(180, 332);
       gap(64);
-      plat(280, 210);
-      gap(50);
-      mover(250, 250, { axis: "x", amp: 48, period: 2.1, phase: 0.4 });
-      gap(188);
-      ground(380);
-      b.fruit(x - 160, 372);
+      plat(170, 262);
+      gap(60);
+      plat(260, 210);
+      gap(150);
+      ground(420);
+      b.fruit(x - 200, 360);
 
       const swing = x;
       gap(140);
@@ -672,6 +673,306 @@ const STAGES_SRC = [
       ground(1280);
       b.check(x - 1180);
       b.goal(x - 320);
+    },
+  },
+  {
+    id: 11,
+    name: "そらのわ",
+    subtitle: "空中でもういちど",
+    speed: 292,
+    dress: "meadow",
+    palette: palette({
+      skyTop: "#e7f6ff",
+      skyBottom: "#fff1d2",
+      sun: "#fff3b0",
+      hillFar: "#f2d7a4",
+      hillMid: "#8ec8ea",
+      ground: "#6eb85a",
+      groundDeep: "#3d8a44",
+      soil: "#d0894e",
+      grass: "#b6e86e",
+      plat: "#fff6d8",
+      platTop: "#fffdf4",
+      accent: "#ef6a48",
+      accent2: "#7ec8f0",
+      ink: "#2c3a48",
+      pit: "#6a4528",
+      cloud: "#ffffff",
+      spike: "#ef5a48",
+      spikeDeep: "#c43c32",
+      mote: "#7ec8f0",
+      card: "#e7f6ff",
+      cardInk: "#2c3a48",
+    }),
+    build(b) {
+      let x = 0;
+      const ground = (w) => { b.ground(x, w); x += w; };
+      const gap = (w) => { x += w; };
+      const plat = (w, y) => { b.plat(x, y, w); x += w; };
+
+      ground(620);
+      b.hint(160, 286, "空中でもういちどおすと、とおくまでとどく");
+      b.fruit(420, 356);
+      gap(300);
+      ground(520);
+      b.check(x - 420);
+      gap(308);
+      ground(560);
+      b.fruit(x - 400, 356);
+      b.hint(x - 460, 286, "つぎは にだんで うえのあしばへ");
+      gap(56);
+      plat(480, 198);
+      b.fruit(x - 260, 150);
+      gap(80);
+      ground(1100);
+      b.goal(x - 280);
+    },
+  },
+  {
+    id: 12,
+    name: "とげのまど",
+    subtitle: "ひくく、それからとおく",
+    speed: 310,
+    dress: "canyon",
+    palette: palette({
+      skyTop: "#f8d8c8",
+      skyBottom: "#f0b8a4",
+      sun: "#fff0c4",
+      hillFar: "#e0a088",
+      hillMid: "#c56b48",
+      ground: "#d07a52",
+      groundDeep: "#8d4630",
+      soil: "#a85a3c",
+      grass: "#f0c2a0",
+      plat: "#ffe7c8",
+      platTop: "#fff6ea",
+      accent: "#ffd45c",
+      accent2: "#fff1b0",
+      ink: "#3a2218",
+      rim: "#fff4ea",
+      pit: "#4a2818",
+      cloud: "#fff0e6",
+      spike: "#ff5a48",
+      spikeDeep: "#c43828",
+      mote: "#ffd45c",
+      card: "#ffe4d4",
+      cardInk: "#3a2218",
+    }),
+    build(b) {
+      let x = 0;
+      const ground = (w) => { b.ground(x, w); x += w; };
+      const gap = (w) => { x += w; };
+      const plat = (w, y) => { b.plat(x, y, w); x += w; };
+
+      ground(700);
+      b.hint(150, 286, "とげは ひくく。そのさきは にだん");
+      b.spike(430, 2);
+      b.spike(560, 2);
+      b.fruit(250, 352);
+      gap(320);
+      ground(560);
+      b.check(x - 460);
+      b.fruit(x - 300, 352);
+      b.hint(x - 420, 250, "うえのまどは にだんじゃないととどかない");
+      gap(48);
+      plat(500, 188);
+      gap(90);
+      ground(420);
+      const swing = x;
+      gap(146);
+      ground(280);
+      b.pendulum(swing + 73, 150, 168, 0.92, 2.7, 0.4);
+      b.hint(swing - 240, 250, "ふりこが ひらいたら とぶ");
+      b.fruit(x - 160, 352);
+      gap(70);
+      ground(980);
+      b.goal(x - 260);
+    },
+  },
+  {
+    id: 13,
+    name: "くずれるそら",
+    subtitle: "のったら すぐとぶ",
+    speed: 304,
+    dress: "clay",
+    palette: palette({
+      skyTop: "#f6e2cf",
+      skyBottom: "#f0c8a8",
+      sun: "#fff1c2",
+      hillFar: "#e2b08a",
+      hillMid: "#c48462",
+      ground: "#d09268",
+      groundDeep: "#8d5a38",
+      soil: "#b07848",
+      grass: "#e8c49a",
+      plat: "#fff0d8",
+      platTop: "#fff8ec",
+      accent: "#ef6848",
+      accent2: "#ffd36a",
+      ink: "#3a281c",
+      pit: "#5a3824",
+      cloud: "#fff6ee",
+      spike: "#e85a40",
+      spikeDeep: "#b43828",
+      mote: "#ffd36a",
+      card: "#fff0e0",
+      cardInk: "#3a281c",
+    }),
+    build(b) {
+      let x = 0;
+      const ground = (w) => { b.ground(x, w); x += w; };
+      const gap = (w) => { x += w; };
+      const plat = (w, y) => { b.plat(x, y, w); x += w; };
+      const crumble = (w, y, delay = 0.48) => { b.crumble(x, y, w, delay); x += w; };
+
+      ground(540);
+      b.hint(150, 286, "くずれあしばは ためずに にだん");
+      b.fruit(360, 356);
+      gap(36);
+      crumble(210, 408, 0.62);
+      gap(44);
+      plat(500, 196);
+      b.fruit(x - 280, 148);
+      b.check(x - 420, 196);
+      gap(292);
+      plat(460, 214);
+      b.hint(x - 430, 160, "おなじたかさでも この幅は にだん");
+      gap(70);
+      ground(420);
+      gap(40);
+      crumble(160, 408, 0.5);
+      gap(64);
+      crumble(150, 360, 0.46);
+      gap(60);
+      ground(980);
+      b.fruit(x - 700, 356);
+      b.check(x - 860);
+      b.goal(x - 280);
+    },
+  },
+  {
+    id: 14,
+    name: "かぜのたに",
+    subtitle: "かぜが ジャンプをかえる",
+    speed: 270,
+    dress: "wind",
+    palette: palette({
+      skyTop: "#fff6ea",
+      skyBottom: "#d7ecff",
+      sun: "#fff4c4",
+      hillFar: "#f0e2c0",
+      hillMid: "#ecd59a",
+      ground: "#8fbe6a",
+      groundDeep: "#4e8a48",
+      soil: "#d0a06a",
+      grass: "#c6e888",
+      plat: "#fff8e8",
+      platTop: "#ffffff",
+      accent: "#6eb7e8",
+      accent2: "#ffe14a",
+      ink: "#3a3428",
+      pit: "#3d5870",
+      cloud: "#ffffff",
+      spike: "#ef6a48",
+      spikeDeep: "#c44838",
+      mote: "#6eb7e8",
+      card: "#e7f4ff",
+      cardInk: "#3a3428",
+    }),
+    build(b) {
+      let x = 0;
+      const ground = (w) => { b.ground(x, w); x += w; };
+      const gap = (w) => { x += w; };
+
+      ground(560);
+      b.hint(150, 286, "おいかぜのあいだは とおくとべる");
+      b.wind(x - 80, 420, 140);
+      gap(250);
+      ground(480);
+      b.fruit(x - 300, 368);
+      b.check(x - 380);
+      b.fruit(x - 240, 356);
+      b.hint(x - 400, 286, "むかいかぜ。にだんじゃないと 谷をこえられない");
+      b.wind(x - 200, 1200, -110);
+      gap(162);
+      ground(640);
+      gap(90);
+      ground(420);
+      b.fruit(x - 250, 356);
+      gap(80);
+      ground(900);
+      b.goal(x - 260);
+    },
+  },
+  {
+    id: 15,
+    name: "つきのうら",
+    subtitle: "いちばんとおい よる",
+    speed: 324,
+    dress: "stars",
+    palette: palette({
+      skyTop: "#1a2048",
+      skyBottom: "#3a4e9a",
+      sun: "#fff3c0",
+      hillFar: "#2a3878",
+      hillMid: "#4a62b8",
+      ground: "#314898",
+      groundDeep: "#1a2868",
+      soil: "#3a4e9a",
+      grass: "#f2d56a",
+      plat: "#ffe7a4",
+      platTop: "#fff6d4",
+      accent: "#ffd45c",
+      accent2: "#ff8fb0",
+      ink: "#14182e",
+      rim: "#f4f7ff",
+      pit: "#10162e",
+      cloud: "#d5defe",
+      spike: "#ff6d7a",
+      spikeDeep: "#d44858",
+      mote: "#fff1b8",
+      card: "#e4e9ff",
+      cardInk: "#1a2048",
+    }),
+    build(b) {
+      let x = 0;
+      const ground = (w) => { b.ground(x, w); x += w; };
+      const gap = (w) => { x += w; };
+      const plat = (w, y) => { b.plat(x, y, w); x += w; };
+      const crumble = (w, y, delay = 0.46) => { b.crumble(x, y, w, delay); x += w; };
+
+      ground(640);
+      b.hint(150, 286, "よるのみちは にだんが あたりまえ");
+      gap(330);
+      ground(520);
+      b.fruit(x - 340, 368);
+      b.check(x - 420);
+      gap(52);
+      plat(520, 186);
+      b.hint(x - 480, 130, "つきまで もういちど おして");
+      b.fruit(x - 240, 140);
+      gap(100);
+      ground(380);
+      b.spike(x - 300, 3);
+      const swing = x;
+      gap(150);
+      ground(300);
+      b.pendulum(swing + 75, 148, 170, 0.9, 2.6, 0.2);
+      b.hint(swing - 220, 246, "ふりこを みのがしてから");
+      gap(64);
+      ground(300);
+      gap(36);
+      crumble(170, 408, 0.5);
+      gap(56);
+      crumble(160, 330, 0.44);
+      gap(70);
+      ground(360);
+      b.check(x - 280);
+      b.hint(x - 300, 250, "さいごの谷も にだん");
+      gap(336);
+      ground(1100);
+      b.fruit(x - 760, 352);
+      b.goal(x - 280);
     },
   },
 ];
